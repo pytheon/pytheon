@@ -127,8 +127,11 @@ def buildout(interpreter, buildout='pytheon.cfg', eggs=None, env={}):
         return
 
     if not os.path.isfile('pytheon-bootstrap.py'):
-        page = urllib.urlopen(
-         'http://svn.zope.org/*checkout*/zc.buildout/trunk/bootstrap/bootstrap.py')
+        if ver[0] == '3':
+            bootstrap_url = 'http://svn.zope.org/*checkout*/zc.buildout/branches/2/bootstrap/bootstrap.py'
+        else:
+            bootstrap = 'http://svn.zope.org/*checkout*/zc.buildout/trunk/bootstrap/bootstrap.py'
+        page = urllib.urlopen(bootstrap_url)
         open('pytheon-bootstrap.py', 'w').write(page.read())
     if eggs and os.path.isdir(eggs):
         env['PYTHON_EGGS'] = eggs
