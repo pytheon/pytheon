@@ -120,7 +120,8 @@ def buildout(interpreter, buildout='pytheon.cfg', eggs=None, env={}):
     env = dict(os.environ, **env)
 
     ver = interpreter[-3:]
-    buildout_bin = '/var/share/pytheon/bin/buildout-%s' % ver
+    prefix = env.get('PYTHEON_PREFIX', os.getcwd())
+    buildout_bin = join(prefix, 'bin', 'buildout-%s' % ver)
     if os.path.isfile(buildout_bin):
         call(buildout_bin, '-c', buildout, env=env)
         return
@@ -139,7 +140,10 @@ def buildout(interpreter, buildout='pytheon.cfg', eggs=None, env={}):
                        env=env)
     else:
         call(interpreter, 'pytheon-bootstrap.py', '--distribute', '-c', buildout, env=env)
-    call('bin/buildout', '-c', buildout, env=env)
+
+    buildout_bin = join(prefix, 'bin', 'buildout')
+    call(buildout_bin, '-c', buildout, env=env)
+
 
 def get_input(prompt='', default=None, password=None):
     if password:
