@@ -1,4 +1,9 @@
 from setuptools import setup, find_packages
+try:
+   from distutils.command.build_py import build_py_2to3 \
+        as build_py
+except ImportError:
+   from distutils.command.build_py import build_py
 import sys, os
 
 version = '0.1'
@@ -31,6 +36,7 @@ setup(name='pytheon',
       include_package_data=True,
       zip_safe=True,
       install_requires=install_requires,
+      cmdclass = {'build_py': build_py},
       entry_points="""
       # -*- Entry points: -*-
       [console_scripts]
