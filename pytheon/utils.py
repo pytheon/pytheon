@@ -15,6 +15,8 @@ except ImportError:
 
 log = logging.getLogger('Pytheon')
 
+PY3 = sys.version_info[0] == 3
+
 class JSON(dict):
     """an advanced dict to allow easy manipulation of JSON objects"""
 
@@ -130,7 +132,7 @@ def buildout(interpreter, buildout='pytheon.cfg', eggs=None, env={}):
         if ver[0] == '3':
             bootstrap_url = 'http://svn.zope.org/*checkout*/zc.buildout/branches/2/bootstrap/bootstrap.py'
         else:
-            bootstrap = 'http://svn.zope.org/*checkout*/zc.buildout/trunk/bootstrap/bootstrap.py'
+            bootstrap_url = 'http://svn.zope.org/*checkout*/zc.buildout/trunk/bootstrap/bootstrap.py'
         page = urllib.urlopen(bootstrap_url)
         open('pytheon-bootstrap.py', 'w').write(page.read())
     if eggs and os.path.isdir(eggs):
