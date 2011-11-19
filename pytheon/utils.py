@@ -2,10 +2,13 @@
 import os
 import sys
 import socket
-import urllib
 import logging
 import subprocess
 from os.path import join
+try:
+    from urllib.request import urlopen
+except ImportError:
+    from urllib import urlopen
 from ConfigObject import ConfigObject
 
 try:
@@ -82,8 +85,13 @@ def project_config(filename=None):
     return Config.from_file(filename)
 
 def template_path(template):
+    templates_dir = os.path.join(os.environ.get('PYTHEON_PREFIX'),
+                                 'etc', 'pytheon', 'templates')
+    print templates_dir
     if os.path.isdir('/etc/pytheon/templates'):
         templates_dir = '/etc/pytheon/templates'
+    elif os.path.isdir(templates_dir):
+        pass
     else:
         import pytheon.deploy
         templates_dir = join(os.path.dirname(pytheon.deploy.__file__), 'templates')
@@ -133,8 +141,11 @@ def buildout(interpreter, buildout='pytheon.cfg', eggs=None, env={}):
             bootstrap_url = 'http://svn.zope.org/*checkout*/zc.buildout/branches/2/bootstrap/bootstrap.py'
         else:
             bootstrap_url = 'http://svn.zope.org/*checkout*/zc.buildout/trunk/bootstrap/bootstrap.py'
-        page = urllib.urlopen(bootstrap_url)
-        open('pytheon-bootstrap.py', 'w').write(page.read())
+        page = urlopen(bootstrap_url)
+        data = page.read()
+        if PY3:
+            data = str(data)
+        open('pytheon-bootstrap.py', 'w').write(data)
     if eggs and os.path.isdir(eggs):
         env['PYTHON_EGGS'] = eggs
         env['PYTHONPATH'] = eggs

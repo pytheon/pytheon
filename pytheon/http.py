@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 import logging
-import urllib
 import httplib
 import ssl
 import sys
 import base64
 import socket
 import os.path
+from urllib import urlencode
 from datetime import datetime, timedelta
 from Cookie import SimpleCookie
 from pytheon import utils
@@ -99,7 +99,7 @@ def request(path, method='GET', auth=True, host=None, json=False, **params):
 
     if params:
         method = 'POST'
-        params = urllib.urlencode(params)
+        params = urlencode(params)
         headers['Content-Type'] = "application/x-www-form-urlencoded"
     else:
         params = None
