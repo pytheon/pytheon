@@ -193,3 +193,36 @@ def vcs_binary():
 def current_branch():
     return call('git', 'branch', '--no-color', silent=True).strip().strip('* ')
 
+def get_sql_url():
+    for key in ('PQ_URL', 'MYSQL_URL', 'SQLITE_URL'):
+        if key in os.environ:
+            return os.environ[key]
+    my_cnf = os.path.expanduser('~/.my.cnf')
+    if os.path.isfile(my_cnf):
+        cfg = Config.from_file(my_cnf).client
+        if 'host' not in cfg:
+            cfg.host = '127.0.0.1'
+        if 'port' not in cfg:
+            cfg.port = '3306'
+        if 'db' not in cfg:
+            p = subprocess.Popen('echo "show databases" | mysql | tail -1',
+                                 shell=True, stdout=subprocess.PIPE)
+            db = p.stdout.read().strip()
+            if db not in ('Database', 'information_schema'):
+                cfg.db = db
+        try:
+            url = 'mysql://%(user)s:%(pass)s@%(host)s:%(port)s/%(db)s' % cfg
+        except KeyError:
+            pass
+        os.environ['MYSQL_URL'] = url
+        return url
+
+def engine_from_config(config, **params):
+    sql_url = get_sql_url()
+    prefix = params.get('prefix', 'sqlalchemy.')
+    if sql_url:
+        config['%surl' % prefix] = sql_url
+    if config:
+        import sqlalchemy
+        return sqlalchemy.engine_from_config(config, **params)
+    raise RuntimeError('SQLAlchemy configuration dict is empty')
