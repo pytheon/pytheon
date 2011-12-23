@@ -5,20 +5,14 @@ import socket
 import logging
 import subprocess
 from os.path import join
-try:
-    from urllib.request import urlopen
-except ImportError:
-    from urllib import urlopen
+from pytheon.compat import PY3
+from pytheon.compat import json
+from pytheon.compat import urlopen
 from ConfigObject import ConfigObject
 
-try:
-    import json
-except ImportError:
-    import simplejson as json
 
 log = logging.getLogger('Pytheon')
 
-PY3 = sys.version_info[0] == 3
 
 class JSON(dict):
     """an advanced dict to allow easy manipulation of JSON objects"""
@@ -36,11 +30,13 @@ class JSON(dict):
         elif isinstance(value, dict):
             return self.__class__(value)
         elif isinstance(value, (list, tuple)):
-            return [isinstance(v, dict) and self.__class__(v) or v for v in value]
+            return [isinstance(v, dict) and self.__class__(v) or v \
+                                                        for v in value]
         return value
 
     def __str__(self):
         return json.dumps(self)
+
 
 class Config(ConfigObject):
 
@@ -70,12 +66,15 @@ class Config(ConfigObject):
         config.read(template_path(template))
         return config
 
+
 def user_config():
     filename = os.path.expanduser('~/.pytheonrc')
     return Config.from_file(filename)
 
+
 def user():
     return user_config().pytheon.username or ''
+
 
 def project_config(filename=None):
     if not filename:
@@ -84,30 +83,36 @@ def project_config(filename=None):
                 break
     return Config.from_file(filename)
 
+
 def template_path(template):
-    templates_dir = os.path.join(os.environ.get('PYTHEON_PREFIX'),
-                                 'etc', 'pytheon', 'templates')
-    print templates_dir
+    if 'PYTHEON_PREFIX' in os.environ:
+        templates_dir = os.path.join(os.environ.get('PYTHEON_PREFIX'),
+                                     'etc', 'pytheon', 'templates')
+    else:
+        templates_dir = None
     if os.path.isdir('/etc/pytheon/templates'):
         templates_dir = '/etc/pytheon/templates'
-    elif os.path.isdir(templates_dir):
+    elif templates_dir and os.path.isdir(templates_dir):
         pass
     else:
         import pytheon.deploy
-        templates_dir = join(os.path.dirname(pytheon.deploy.__file__), 'templates')
+        templates_dir = join(os.path.dirname(pytheon.deploy.__file__),
+                             'templates')
     path = join(templates_dir, template + '.in')
     if not os.path.isfile(path):
         log.error('missing template %r' % path)
         sys.exit(-1)
     return path
 
+
 def get_free_port():
     s = socket.socket()
-    s.bind(('',0))
+    s.bind(('', 0))
     ip, port = s.getsockname()
     s.close()
     log.warn('use a new TCP port: %s' % port)
     return port
+
 
 def realpath(*args):
     dirname = os.path.realpath(join(*args))
@@ -115,16 +120,19 @@ def realpath(*args):
         os.makedirs(dirname)
     return dirname
 
+
 def call(*args, **kwargs):
     if 'silent' in kwargs:
         del kwargs['silent']
-        kwargs.update(stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
+        kwargs.update(stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                      close_fds=True)
         p = subprocess.Popen(args, **kwargs)
         p.wait()
         return p.stdout.read()
     elif subprocess.call(args, **kwargs) != 0:
-        log.error('error while running command: %s',' '.join(args))
+        log.error('error while running command: %s', ' '.join(args))
         sys.exit(1)
+
 
 def buildout(interpreter, buildout='pytheon.cfg', eggs=None, env={}):
     env = dict(os.environ, **env)
@@ -138,9 +146,11 @@ def buildout(interpreter, buildout='pytheon.cfg', eggs=None, env={}):
 
     if not os.path.isfile('pytheon-bootstrap.py'):
         if ver[0] == '3':
-            bootstrap_url = 'http://svn.zope.org/*checkout*/zc.buildout/branches/2/bootstrap/bootstrap.py'
+            bootstrap_url = ('http://svn.zope.org/*checkout*/zc.buildout/'
+                             'branches/2/bootstrap/bootstrap.py')
         else:
-            bootstrap_url = 'http://svn.zope.org/*checkout*/zc.buildout/trunk/bootstrap/bootstrap.py'
+            bootstrap_url = ('http://svn.zope.org/*checkout*/zc.buildout/'
+                             'trunk/bootstrap/bootstrap.py')
         page = urlopen(bootstrap_url)
         data = page.read()
         if PY3:
@@ -155,7 +165,8 @@ def buildout(interpreter, buildout='pytheon.cfg', eggs=None, env={}):
                        '-c', buildout,
                        env=env)
     else:
-        call(interpreter, 'pytheon-bootstrap.py', '--distribute', '-c', buildout, env=env)
+        call(interpreter, 'pytheon-bootstrap.py',
+                          '--distribute', '-c', buildout, env=env)
 
     buildout_bin = join(prefix, 'bin', 'buildout')
     call(buildout_bin, '-c', buildout, env=env)
@@ -182,16 +193,20 @@ def get_input(prompt='', default=None, password=None):
         elif value:
             return value
 
+
 def vcs_binary():
     if os.path.isdir('.git'):
         return 'git'
     elif os.path.isdir('.hg'):
         return 'hg'
     else:
-        raise RuntimeError('Not a VCS directory. Please run "git init" or "hg init"')
+        raise RuntimeError(
+                'Not a VCS directory. Please run "git init" or "hg init"')
+
 
 def current_branch():
     return call('git', 'branch', '--no-color', silent=True).strip().strip('* ')
+
 
 def get_sql_url():
     for key in ('PQ_URL', 'MYSQL_URL', 'SQLITE_URL'):
@@ -214,8 +229,10 @@ def get_sql_url():
             url = 'mysql://%(user)s:%(pass)s@%(host)s:%(port)s/%(db)s' % cfg
         except KeyError:
             pass
-        os.environ['MYSQL_URL'] = url
-        return url
+        else:
+            os.environ['MYSQL_URL'] = url
+            return url
+
 
 def engine_from_config(config, **params):
     sql_url = get_sql_url()
