@@ -16,6 +16,7 @@ project_commands = []
 filename = os.path.expanduser('~/.pytheonrc')
 global_config = utils.user_config()
 
+
 def with_project(func):
     @functools.wraps(func)
     def wrapped(parser, options, args):
@@ -32,12 +33,15 @@ def with_project(func):
 def with_parser(parser):
     parser.add_option("--verbose",
                        action="store_true", dest="verbose", default=False)
+
     def wrapper(func):
         if getattr(func, 'project_command', False):
             project_commands.append(func.func_name)
         else:
             commands.append(func.func_name)
-        parser.usage = '%%prog %s [options]\n\n%s' % (func.func_name, func.__doc__.strip())
+        parser.usage = '%%prog %s [options]\n\n%s' % (func.func_name,
+                                                      func.__doc__.strip())
+
         @functools.wraps(func)
         def wrapped(args, **kwargs):
             options, args = parser.parse_args(args)
@@ -54,19 +58,23 @@ def with_parser(parser):
         return wrapped
     return wrapper
 
+
 def commit(binary, filename):
     utils.call(binary, 'add', filename, silent=True)
-    utils.call(binary, 'commit', filename, '-m', '"[pytheon] auto update %s"' % filename, silent=True)
+    utils.call(binary, 'commit', filename, '-m',
+               '"[pytheon] auto update %s"' % filename, silent=True)
 
 
 parser = OptionParser()
 parser.add_option('-e', '--email', action='store', default=utils.user(),
-                  metavar='EMAIL', dest='username', help='E-mail. Default: %s' % utils.user())
+                  metavar='EMAIL', dest='username',
+                  help='E-mail. Default: %s' % utils.user())
 parser.add_option('-k', '--confirm-key', action='store', default=None,
                   dest='key', help='Confirm key')
 parser.add_option('-r', '--reset-password',
                   action='store_true', dest='reset',
                   help='Send a password reset request')
+
 
 @with_parser(parser)
 def register(parser, options, args):
@@ -83,8 +91,10 @@ def register(parser, options, args):
         parser.error('Please specify a valid email')
 
     if options.key:
-        return http.request('/v1/set_password/%s' % options.key.strip('/'), auth=False,
-                            password=utils.get_input('Password', password=True))
+        return http.request('/v1/set_password/%s' % options.key.strip('/'),
+                            auth=False,
+                            password=utils.get_input('Password',
+                            password=True))
     elif options.reset:
         return http.request('/v1/reset_password/', auth=False,
                             email=options.username)
@@ -94,11 +104,15 @@ def register(parser, options, args):
 
 parser = OptionParser()
 parser.add_option('-b', '--buildout', action='store_true', default=False,
-                  dest='buildout', help='Use buildout.cfg file instead of deploy.ini')
-parser.add_option('-n', '--project-name', action='store', default=os.path.basename(os.getcwd()),
+                  dest='buildout',
+                  help='Use buildout.cfg file instead of deploy.ini')
+parser.add_option('-n', '--project-name', action='store',
+                  default=os.path.basename(os.getcwd()),
                   dest='project_name', help='Specify application name')
 parser.add_option('-e', '--email', action='store', default=utils.user(),
-                  metavar='EMAIL', dest='username', help='E-mail. Default: %s' % utils.user())
+                  metavar='EMAIL', dest='username',
+                  help='E-mail. Default: %s' % utils.user())
+
 
 @with_parser(parser)
 def create(parser, options, args):
@@ -116,7 +130,7 @@ def create(parser, options, args):
     config = utils.project_config(filename=options.buildout)
     if not os.path.isfile(config._filename):
         if not options.project_name:
-            options.project_name=utils.get_input('Project name',
+            options.project_name = utils.get_input('Project name',
                            default=os.path.basename(os.getcwd()))
         config.deploy = dict(
                 version='1',
@@ -124,17 +138,19 @@ def create(parser, options, args):
                 project_name=options.project_name,
             )
     if options.project_name:
-        config.deploy.project_name=options.project_name
+        config.deploy.project_name = options.project_name
     config.write()
 
     kw = dict(username=rc.username, project_name=config.deploy.project_name)
     if binary == 'git':
-        remote = os.environ.get('PYTHEON_REMOTE', 'git@git.pytheon.net:%(project_name)s.git').rstrip('/')
+        remote = os.environ.get('PYTHEON_REMOTE',
+                        'git@git.pytheon.net:%(project_name)s.git').rstrip('/')
         remote = remote % kw
         utils.call(binary, 'remote', 'add', 'pytheon', remote, silent=True)
 
     else:
-        remote = os.environ.get('PYTHEON_REMOTE', 'hg@hg.pytheon.net/%(project_name)s').rstrip('/')
+        remote = os.environ.get('PYTHEON_REMOTE',
+                        'hg@hg.pytheon.net/%(project_name)s').rstrip('/')
         remote = remote % kw
         filename = '.hg/hgrc'
         config = Config.from_file(filename)
@@ -152,25 +168,30 @@ parser.add_option('-l', '--list', action='store_true', default=False,
 parser.add_option('--delete', action='store', default=None, metavar='APP',
                   dest='delete', help='Delete application')
 
+
 @with_parser(parser)
 def apps(parser, options, args):
     """Application related command"""
 
     if options.delete:
-        return http.request('/v1/applications/%s' % options.delete, method='DELETE')
+        return http.request('/v1/applications/%s' % options.delete,
+                            method='DELETE')
     return http.request('/v1/applications')
 
 parser = OptionParser()
 parser.add_option('-l', '--list', action='store_true', default=False,
                   dest='list', help='List your application addons')
-parser.add_option('--add', action='store', default=None, metavar='ADDON:PLAN',
+parser.add_option('--add', action='store', default=None,
+                  metavar='ADDON:PLAN',
                   dest='add', help='Add application addon')
-parser.add_option('--upgrade', action='store', default=None, metavar='ADDON:PLAN',
+parser.add_option('--upgrade', action='store', default=None,
+                  metavar='ADDON:PLAN',
                   dest='upgrade', help='Upgrade application addon')
 parser.add_option('--delete', action='store', default=None, metavar='ADDON',
                   dest='delete', help='Delete application addon')
 parser.add_option('--all', action='store_true', default=False,
                   dest='all', help='List all available addons')
+
 
 @with_parser(parser)
 @with_project
@@ -193,12 +214,14 @@ def addons(parser, options, args, config):
             parser.error('Please specify a addon:plan')
         return http.request('%s/%s' % (path, id), method='POST', plan=plan)
     elif options.delete:
-        return http.request('%s/%s' % (path, options.delete), method='DELETE') ## FIXME
+        return http.request('%s/%s' % (path, options.delete),
+                            method='DELETE')  # FIXME
     else:
         return http.request(path)
 
 
 parser = OptionParser()
+
 
 @with_parser(parser)
 @with_project
@@ -228,15 +251,18 @@ def deploy(parser, options, args, config):
 
 parser = OptionParser()
 parser.add_option('-e', '--email', action='store', default=utils.user(),
-                  metavar='EMAIL', dest='username', help='E-mail. Default: %s' % utils.user())
+                  metavar='EMAIL', dest='username',
+                  help='E-mail. Default: %s' % utils.user())
 parser.add_option('-v', '--version', action='store', default=None,
-                  dest='version', help='open a shell for the versioned application')
+                  dest='version',
+                  help='open a shell for the versioned application')
+
 
 @with_parser(parser)
 @with_project
 def shell(parser, options, args, config):
     """Open a ssh shell on pytheon"""
-    kw = dict(project_name=project_name)
+    kw = dict(project_name=global_config.pytheon.project_name)
     utils.call('ssh', '%(project_name)s@pytheon.net' % kw)
 
 parser = OptionParser()
@@ -244,6 +270,7 @@ parser.add_option('-e', '--enable', action='store_true', default=False,
                   dest='enable', help='disable maintenance page')
 parser.add_option('-d', '--disable', action='store_true', default=False,
                   dest='disable', help='disable maintenance page')
+
 
 @with_parser(parser)
 @with_project
@@ -259,6 +286,7 @@ def maintenance(parser, options, args):
 parser = OptionParser()
 parser.add_option('-n', '--name', action='store',
                   dest='name', help='Specify key name')
+
 
 @with_parser(parser)
 def add_key(parser, options, args):

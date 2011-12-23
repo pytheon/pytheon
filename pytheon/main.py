@@ -20,9 +20,11 @@ Get help on each command with: %%prog [command] -h''' % (
     '\n    '.join(sorted(commands.project_commands)))
 
 if '--verbose' in sys.argv:
-    log.basicConfig(stream=sys.stdout, level=log.DEBUG, format='%(levelname)-4s: %(message)s')
+    log.basicConfig(stream=sys.stdout, level=log.DEBUG,
+                    format='%(levelname)-4s: %(message)s')
 else:
     log.basicConfig(stream=sys.stdout, level=log.INFO, format='%(message)s')
+
 
 def main(args=None, testing=False, **kwargs):
     args = args or sys.argv[1:]
@@ -45,6 +47,7 @@ def main(args=None, testing=False, **kwargs):
                         return result.strip()
             return ''
     parser.parse_args(['-h'])
+
 
 def run(*args, **kwargs):
     sys.argv[0] = 'pytheon'

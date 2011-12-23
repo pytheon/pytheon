@@ -12,5 +12,3 @@ for d in [p for p in sys.path if '/python' in p]:
 for p in sys.path:
     if p.endswith('.egg') and p not in pkg_resources.working_set.entries:
         pkg_resources.working_set.add_entry(p)
-
-

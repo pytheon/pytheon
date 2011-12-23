@@ -4,8 +4,10 @@ import re
 
 __version__ = '3.2a3'
 
+
 class CertificateError(ValueError):
     pass
+
 
 def _dnsname_to_pat(dn):
     pats = []
@@ -19,6 +21,7 @@ def _dnsname_to_pat(dn):
             frag = re.escape(frag)
             pats.append(frag.replace(r'\*', '[^.]*'))
     return re.compile(r'\A' + r'\.'.join(pats) + r'\Z', re.IGNORECASE)
+
 
 def match_hostname(cert, hostname):
     """Verify that *cert* (in decoded format as returned by

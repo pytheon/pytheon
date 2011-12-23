@@ -7,16 +7,15 @@ import base64
 import socket
 import os.path
 from urllib import urlencode
-from datetime import datetime, timedelta
 from Cookie import SimpleCookie
 from pytheon import utils
-from pytheon.utils import json
-from pytheon.ssl_match_hostname import match_hostname, CertificateError
+from pytheon.ssl_match_hostname import match_hostname
 
 log = logging.getLogger(__name__)
 
 try:
     import keyring
+    log.debug(keyring.__file__)
 except ImportError:
     keyring = None
 
@@ -54,6 +53,7 @@ class HTTPSConnection(httplib.HTTPSConnection):
             cert_reqs=ssl.CERT_REQUIRED, ca_certs=self.ca_certs)
         match_hostname(self.sock.getpeercert(), self.host)
 
+
 def auth_basic(retry=False):
     config = utils.user_config()
     username = config.pytheon.username or utils.get_input('Username')
@@ -66,32 +66,37 @@ def auth_basic(retry=False):
     if keyring:
         keyring.set_password('basic:api.pytheon.net', username, password)
     auth = base64.encodestring('%s:%s' % (username, password))
-    return {'Authorization' : 'Basic ' + auth.strip()}
+    return {'Authorization': 'Basic ' + auth.strip()}
+
 
 def auth_cookie():
     config = utils.user_config()
     if keyring:
         log.debug('Use keyring module. Great!')
-        cookie = keyring.get_password('cookie:api.pytheon.net', config.pytheon.username)
+        cookie = keyring.get_password('cookie:api.pytheon.net',
+                                      config.pytheon.username)
     else:
         config = utils.user_config()
         cookie = config.pytheon.auth_cookie or None
     if cookie is not None:
-        return {'Cookie' : 'auth_tkt=%s' % cookie}
+        return {'Cookie': 'auth_tkt=%s' % cookie}
     return None
+
 
 def save_cookie(headers):
     config = utils.user_config()
-    for k,v in headers:
+    for k, v in headers:
         if k.lower() == 'set-cookie':
             cookie = SimpleCookie(v)
             auth_cookie = cookie['auth_tkt'].value
             log.debug('Cookie: %s', auth_cookie)
             if keyring:
-                keyring.set_password('cookie:api.pytheon.net', config.pytheon.username, auth_cookie)
+                keyring.set_password('cookie:api.pytheon.net',
+                                     config.pytheon.username, auth_cookie)
             else:
                 config.pytheon.auth_cookie = auth_cookie
                 config.write()
+
 
 def request(path, method='GET', auth=True, host=None, json=False, **params):
     config = utils.user_config()
