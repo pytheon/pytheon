@@ -145,12 +145,11 @@ def buildout(interpreter, buildout='pytheon.cfg', eggs=None, env={}):
         return
 
     if not os.path.isfile('pytheon-bootstrap.py'):
+        bootstrap_url = 'https://raw.github.com/buildout/buildout'
         if ver[0] == '3':
-            bootstrap_url = ('http://svn.zope.org/*checkout*/zc.buildout/'
-                             'branches/2/bootstrap/bootstrap.py')
+            bootstrap_url += '/1.6.x/bootstrap/bootstrap.py'
         else:
-            bootstrap_url = ('http://svn.zope.org/*checkout*/zc.buildout/'
-                             'trunk/bootstrap/bootstrap.py')
+            bootstrap_url += '/2/bootstrap/bootstrap.py'
         page = urlopen(bootstrap_url)
         data = page.read()
         if PY3:
