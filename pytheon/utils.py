@@ -214,6 +214,8 @@ def get_sql_url():
     my_cnf = os.path.expanduser('~/.my.cnf')
     if os.path.isfile(my_cnf):
         cfg = Config.from_file(my_cnf).client
+        if 'pass' not in cfg:
+            cfg['pass'] = cfg.password
         if 'host' not in cfg:
             cfg.host = '127.0.0.1'
         if 'port' not in cfg:
@@ -251,7 +253,7 @@ def engine_dict():
         database=url.database,
         drivername=url.drivername,
         username=url.username,
-        password=url.password.replace(' ', '+'),
+        password=url.password,
         host=url.host,
       )
 
