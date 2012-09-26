@@ -30,7 +30,7 @@ class JSON(dict):
         elif isinstance(value, dict):
             return self.__class__(value)
         elif isinstance(value, (list, tuple)):
-            return [isinstance(v, dict) and self.__class__(v) or v \
+            return [isinstance(v, dict) and self.__class__(v) or v
                                                         for v in value]
         return value
 
@@ -242,3 +242,31 @@ def engine_from_config(config, **params):
         import sqlalchemy
         return sqlalchemy.engine_from_config(config, **params)
     raise RuntimeError('SQLAlchemy configuration dict is empty')
+
+
+def engine_dict():
+    engine = engine_from_config({})
+    url = engine.url
+    return dict(
+        database=url.database,
+        drivername=url.drivername,
+        username=url.username,
+        password=url.password.replace(' ', '+'),
+        host=url.host,
+      )
+
+
+def backup_db(backup_dir, dry_run=False):
+    from datetime import datetime
+    now = datetime.now().strftime('%Y%m%d%H%M')
+    data = engine_dict()
+    filename = '%(database)s-%(now)s.sql.gz' % dict(data, now=now)
+    data['filename'] = os.path.join(
+            realpath(os.path.expanduser('~'), 'backups', 'sql'),
+            filename)
+    if data.get('drivername') == 'mysql':
+        log.info('Backuping to %(filename)s', data)
+        cmd = ('mysqldump --add-drop-table %(database)s '
+               '-u %(username)s -p%(password)s '
+               '-h %(host)s | gzip > %(filename)s') % data
+        subprocess.call(cmd, shell=True)
