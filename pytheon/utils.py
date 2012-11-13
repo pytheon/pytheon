@@ -168,6 +168,7 @@ def buildout(interpreter, buildout='pytheon.cfg', eggs=None, env={}):
                        env=env)
     else:
         call(interpreter, 'pytheon-bootstrap.py',
+                          '-v', version,
                           '--distribute', '-c', buildout, env=env)
 
     buildout_bin = join(prefix, 'bin', 'buildout')
@@ -216,24 +217,30 @@ def get_sql_url():
             return os.environ[key]
     my_cnf = os.path.expanduser('~/.my.cnf')
     if os.path.isfile(my_cnf):
-        cfg = Config.from_file(my_cnf).client
-        if 'pass' not in cfg:
-            cfg['pass'] = cfg.password
-        if 'host' not in cfg:
-            cfg.host = '127.0.0.1'
-        if 'port' not in cfg:
-            cfg.port = '3306'
-        if 'db' not in cfg:
-            p = subprocess.Popen('echo "show databases" | mysql | tail -1',
-                                 shell=True, stdout=subprocess.PIPE)
+        cfg = Config.from_file(my_cnf)
+        client = cfg.client
+        if 'pass' not in client:
+            client['pass'] = client.password
+        if 'host' not in client:
+            client.host = '127.0.0.1'
+        if 'port' not in client:
+            client.port = '3306'
+        if 'db' in cfg.pytheon:
+            client.db = cfg.pytheon.db
+        if 'db' not in client:
+            p = subprocess.Popen(
+                'echo "show databases" | mysql -h %(host)s | tail -1' % client,
+                shell=True, stdout=subprocess.PIPE)
             db = p.stdout.read().strip()
             if db not in ('Database', 'information_schema'):
-                cfg.db = db
+                client.db = db
         try:
-            url = 'mysql://%(user)s:%(pass)s@%(host)s:%(port)s/%(db)s' % cfg
+            url = 'mysql://%(user)s:%(pass)s@%(host)s:%(port)s/%(db)s' % client
         except KeyError:
-            pass
+            log.error('Can not determine a valid url from ~/.my.cnf')
         else:
+            log.info(
+               'Using mysql://%(user)s:XXXs@%(host)s:%(port)s/%(db)s' % client)
             os.environ['MYSQL_URL'] = url
             return url
 
