@@ -255,8 +255,11 @@ def get_sql_url():
             log.error('Can not determine a valid url from %s' % cnf)
         else:
             log.info(
-               'Using mysql://%(user)s:XXXs@%(host)s:%(port)s/%(db)s' % client)
-            os.environ['MYSQL_URL'] = url
+               'Using %(p)s://%(user)s:XXXs@%(host)s:%(port)s/%(db)s' % client)
+            if prefix == 'mysql':
+                os.environ['MYSQL_URL'] = url
+            else:
+                os.environ['PG_URL'] = url
             return url
 
 
