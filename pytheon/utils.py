@@ -231,7 +231,10 @@ def get_sql_url():
         if 'host' not in client:
             client.host = '127.0.0.1'
         if 'port' not in client:
-            client.port = '3306'
+            if prefix == 'mysql':
+                client.port = '3306'
+            else:
+                client.port = '5432'
         if 'db' in cfg.pytheon:
             client.db = cfg.pytheon.db
         if 'db' not in client and prefix == 'mysql':
