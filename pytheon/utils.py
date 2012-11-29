@@ -212,13 +212,20 @@ def current_branch():
 
 
 def get_sql_url():
-    for key in ('PQ_URL', 'MYSQL_URL', 'SQLITE_URL'):
+    for key in ('PG_URL', 'MYSQL_URL', 'SQLITE_URL'):
         if key in os.environ:
             return os.environ[key]
-    my_cnf = os.path.expanduser('~/.my.cnf')
-    if os.path.isfile(my_cnf):
-        cfg = Config.from_file(my_cnf)
+    cnf = os.path.expanduser('~/.my.cnf')
+    if os.path.isfile(cnf):
+        prefix = 'mysql'
+    else:
+        cnf = os.path.expanduser('~/.pg.cnf')
+        if os.path.isfile(cnf):
+            prefix = 'postgresql'
+    if os.path.isfile(cnf):
+        cfg = Config.from_file(cnf)
         client = cfg.client
+        client.p = prefix
         if 'pass' not in client:
             client['pass'] = client.password
         if 'host' not in client:
@@ -227,17 +234,25 @@ def get_sql_url():
             client.port = '3306'
         if 'db' in cfg.pytheon:
             client.db = cfg.pytheon.db
-        if 'db' not in client:
+        if 'db' not in client and prefix == 'mysql':
             p = subprocess.Popen(
                 'echo "show databases" | mysql -h %(host)s | tail -1' % client,
                 shell=True, stdout=subprocess.PIPE)
             db = p.stdout.read().strip()
             if db not in ('Database', 'information_schema'):
                 client.db = db
+        elif 'db' not in client and prefix == 'postgresql':
+            p = subprocess.Popen(
+                'psql -l | grep `whoami` | tail -n 1 | cut -d' ' -f2',
+                shell=True, stdout=subprocess.PIPE)
+            db = p.stdout.read().strip()
+            if db not in ('Database', 'information_schema'):
+                client.db = db
+
         try:
-            url = 'mysql://%(user)s:%(pass)s@%(host)s:%(port)s/%(db)s' % client
+            url = '%(p)s://%(user)s:%(pass)s@%(host)s:%(port)s/%(db)s' % client
         except KeyError:
-            log.error('Can not determine a valid url from ~/.my.cnf')
+            log.error('Can not determine a valid url from %s' % cnf)
         else:
             log.info(
                'Using mysql://%(user)s:XXXs@%(host)s:%(port)s/%(db)s' % client)
@@ -281,4 +296,9 @@ def backup_db(backup_dir, dry_run=False):
         cmd = ('mysqldump --add-drop-table %(database)s '
                '-u %(username)s -p%(password)s '
                '-h %(host)s | gzip > %(filename)s') % data
+        subprocess.call(cmd, shell=True)
+    elif data.get('drivername').startswith('postgresql'):
+        log.info('Backuping to %(filename)s', data)
+        cmd = ('pg_dump -c -w -U %(username)s '
+               '%(database)s | gzip > %(filename)s') % data
         subprocess.call(cmd, shell=True)
