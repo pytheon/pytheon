@@ -134,7 +134,7 @@ def call(*args, **kwargs):
         sys.exit(1)
 
 
-def buildout(interpreter, buildout='pytheon.cfg', eggs=None, env={}):
+def buildout(interpreter, buildout='pytheon.cfg', eggs=None, verbose=None, env={}):
     env = dict(os.environ, **env)
 
     ver = interpreter[-3:]
@@ -178,7 +178,12 @@ def buildout(interpreter, buildout='pytheon.cfg', eggs=None, env={}):
         )
 
     buildout_bin = join(prefix, 'bin', 'buildout')
-    call(buildout_bin, '-c', buildout, env=env)
+    call(
+        buildout_bin,
+        '-vvv' if verbose else '',
+        '-c', buildout,
+        env=env
+    )
 
 
 def get_input(prompt='', default=None, password=None):
