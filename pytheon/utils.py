@@ -146,13 +146,7 @@ def buildout(interpreter, buildout='pytheon.cfg', eggs=None, verbose=None, env={
 
     if not os.path.isfile('pytheon-bootstrap.py'):
         bootstrap_url = 'https://raw.github.com/'
-        if ver[0] == '3':
-            bootstrap_url += 'buildout/buildout/2/bootstrap/bootstrap.py'
-            buildout_version = '2.0.0'
-        else:
-            bootstrap_url += 'pytheon/pytheon/master/bootstrap.py'
-            buildout_version = '1.7.0'
-
+        bootstrap_url += 'buildout/buildout/master/bootstrap/bootstrap.py'
         page = urlopen(bootstrap_url)
         data = page.read()
         if PY3:
@@ -165,7 +159,6 @@ def buildout(interpreter, buildout='pytheon.cfg', eggs=None, verbose=None, env={
         call(
             interpreter,
             'pytheon-bootstrap.py',
-            '-v %s' % buildout_version,
             '--eggs=%s' % eggs,
             env=env
         )
@@ -173,7 +166,6 @@ def buildout(interpreter, buildout='pytheon.cfg', eggs=None, verbose=None, env={
         call(
             interpreter,
             'pytheon-bootstrap.py',
-            '-v %s' % buildout_version,
             env=env
         )
 
