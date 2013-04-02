@@ -159,23 +159,24 @@ def buildout(interpreter, buildout='pytheon.cfg', eggs=None, verbose=None, env={
         call(
             interpreter,
             'pytheon-bootstrap.py',
-            '--eggs=%s' % eggs,
+            #'--eggs=%s' % eggs,
+            '-c', buildout,
             env=env
         )
     else:
         call(
             interpreter,
             'pytheon-bootstrap.py',
+            '-c', buildout,
             env=env
         )
 
     buildout_bin = join(prefix, 'bin', 'buildout')
-    call(
-        buildout_bin,
-        '-vvv' if verbose else '',
-        '-c', buildout,
-        env=env
-    )
+    args = [buildout_bin, '-c', buildout]
+    if verbose:
+        args.insert(1, '-vvv')
+    args
+    call(*args, env=env)
 
 
 def get_input(prompt='', default=None, password=None):
@@ -207,7 +208,7 @@ def vcs_binary():
         return 'hg'
     else:
         raise RuntimeError(
-                'Not a VCS directory. Please run "git init" or "hg init"')
+            'Not a VCS directory. Please run "git init" or "hg init"')
 
 
 def current_branch():
