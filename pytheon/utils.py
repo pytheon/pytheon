@@ -137,11 +137,10 @@ def call(*args, **kwargs):
 def buildout(interpreter, buildout='pytheon.cfg', eggs=None, verbose=None, env={}):
     env = dict(os.environ, **env)
 
+    if interpreter.endswith('python'):
+        interpreter = 'python' + sys.version[:3]
     ver = interpreter[-3:]
-    if os.path.isdir('/var/lib/pytheon'):
-        prefix = '/var/lib/pytheon'
-    else:
-        prefix = env.get('PYTHEON_PREFIX', os.getcwd())
+    prefix = env.get('PYTHEON_PREFIX', os.getcwd())
     buildout_bin = join(prefix, 'bin', 'buildout-%s' % ver)
     if os.path.isfile(buildout_bin):
         call(buildout_bin, '-c', buildout, env=env)
