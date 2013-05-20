@@ -50,8 +50,11 @@ class HTTPSConnection(httplib.HTTPSConnection):
         """
         sock = socket.create_connection((self.host, self.port), self.timeout)
         self.sock = ssl.wrap_socket(sock, ssl_version=self.ssl_version,
-            cert_reqs=ssl.CERT_REQUIRED, ca_certs=self.ca_certs)
-        match_hostname(self.sock.getpeercert(), self.host)
+                                    cert_reqs=ssl.CERT_REQUIRED,
+                                    ca_certs=self.ca_certs)
+        if 'pytheon.net' in self.host:
+            # only check certificate on real api
+            match_hostname(self.sock.getpeercert(), self.host)
 
 
 def auth_basic(retry=False):
@@ -61,7 +64,7 @@ def auth_basic(retry=False):
     if keyring:
         log.debug('Use keyring module. Great!')
         password = keyring.get_password('basic:api.pytheon.net', username)
-    if password == None or retry:
+    if password is None or retry:
         password = utils.get_input('Password', password=True)
     if keyring:
         keyring.set_password('basic:api.pytheon.net', username, password)
